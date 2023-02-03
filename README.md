@@ -8,4 +8,4 @@ I inserted code snippet in the file at #if define (kwon_mixcoffee_pc) or (kwon_m
 
 		kwon_mixcoffee for gpr register latency
 
-		kwon_mixcoffee for one tb latency
+		kwon_mixcoffee_pc for one tb latency

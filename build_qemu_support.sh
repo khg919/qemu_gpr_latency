@@ -37,10 +37,10 @@ cd qemu-$VERSION || exit 1
 make clean
 make distclean
 
-CFLAGS="-O3 -ggdb -static" ./configure --disable-system  \
+CFLAGS="-O0 -ggdb -static" ./configure --disable-system  \
   --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
   --target-list="${CPU_TARGET}-linux-user,aarch64-linux-user" --enable-pie --disable-kvm \
-  --extra-cflags=-Dkwon_mixcoffee \
+  --extra-cflags=-Dkwon_mixcoffee_pc \
   || exit 1
 
 #--extra-cflags=-Dkwon_perf \

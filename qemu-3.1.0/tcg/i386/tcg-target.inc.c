@@ -37,26 +37,32 @@ static void tcg_out_tb_latency(TCGContext *s){
 		tcg_out8(s, 0x0F);/*rdtsc */
 		tcg_out8(s, 0x31);/*rdtsc */
 
+		/*align for movaps(operand must be aligned 16byte*/
+		tcg_out8(s, 0x48);/*sub rsp,0x8*/
+		tcg_out8(s, 0x83);/*sub rsp,0x8*/
+		tcg_out8(s, 0xec);/*sub rsp,0x8*/
+		tcg_out8(s, 0x8);/*sub rsp,0x8*/
 		tcg_out8(s, 0x50);/*pushq %rax*/
 
-		tcg_out8(s, 0x48);/*add rsp,0x8*/
-		tcg_out8(s, 0x83);/*add rsp,0x8*/
-		tcg_out8(s, 0xc4);/*add rsp,0x8*/
-		tcg_out8(s, 0x08);/*add rsp,0x8*/
+		tcg_out8(s, 0x48);/*add rsp,0x10*/
+		tcg_out8(s, 0x83);/*add rsp,0x10*/
+		tcg_out8(s, 0xc4);/*add rsp,0x10*/
+		tcg_out8(s, 0x10);/*add rsp,0x10*/
 
 		tcg_out8(s, 0x5a);/*pop rdx*/
 		tcg_out8(s, 0x58);/*pop rax*/
 
-		tcg_out8(s, 0x48);/*sub rsp,0x18*/
-		tcg_out8(s, 0x83);/*sub rsp,0x18*/
-		tcg_out8(s, 0xec);/*sub rsp,0x18*/
-		tcg_out8(s, 0x18);/*sub rsp,0x18*/
+		tcg_out8(s, 0x48);/*sub rsp,0x20*/
+		tcg_out8(s, 0x83);/*sub rsp,0x20*/
+		tcg_out8(s, 0xec);/*sub rsp,0x20*/
+		tcg_out8(s, 0x20);/*sub rsp,0x20*/
 }
 #endif
 
 #if defined (kwon_mixcoffee) || defined(kwon_mixcoffee_pc)
-void hel (unsigned int *x){
+volatile void hel (unsigned int *x){
 		register unsigned long *pc asm("r14");
+		int returnx;
 		unsigned int y;
 		y = *x;
 		__asm__ __volatile__("nop\n\t");
@@ -1274,23 +1280,32 @@ static bool tcg_out_sti(TCGContext *s, TCGType type, TCGArg val,
 #if defined(kwon_mixcoffee_pc)
 				if ( base == TCG_REG_R14 ){ 
 						if( ofs == 0x140 ) { 
+								tcg_out8(s, 0x50);/*pushq %rax*/ 
+								tcg_out8(s, 0x52);/*pushq %rdx*/ 
+								tcg_out8(s, 0x41);/*pushq %r8 */ 
+								tcg_out8(s, 0x50);/*pushq %r8 */ 
 
 								tcg_out8(s, 0x0F);/*rdtscp */ 
 								tcg_out8(s, 0x01);/*rdtscp */ 
 								tcg_out8(s, 0xF9);/*rdtscp */ 
 
-								tcg_out8(s, 0x48);/*add rsp,0x10 */ 
-								tcg_out8(s, 0x83);/* */ 
-								tcg_out8(s, 0xc4);/* */ 
-								tcg_out8(s, 0x10);/* */ 
-
-								tcg_out8(s, 0x41);/*pop r8*/
-								tcg_out8(s, 0x58);/*pop r8*/
-
-								tcg_out8(s, 0x48);/*sub rsp,0x18*/ 
-								tcg_out8(s, 0x83);/* */ 
-								tcg_out8(s, 0xec);/* */ 
+								tcg_out8(s, 0x4c);/* mov    r8,QWORD PTR [rsp+0x18] */ 
+								tcg_out8(s, 0x8b);/* */ 
+								tcg_out8(s, 0x44);/* */ 
+								tcg_out8(s, 0x24);/* */ 
 								tcg_out8(s, 0x18);/* */ 
+
+								
+
+								tcg_out8(s, 0x51);/*pushq %rcx */ 
+								tcg_out8(s, 0x56);/*pushq %rsi */ 
+								tcg_out8(s, 0x57);/*pushq %rdi */ 
+								tcg_out8(s, 0x41);/*pushq %r9 */ 
+								tcg_out8(s, 0x51);/*pushq %r9 */ 
+								tcg_out8(s, 0x41);/*pushq %r10 */ 
+								tcg_out8(s, 0x52);/*pushq %r10 */ 
+								tcg_out8(s, 0x41);/*pushq %r11 */ 
+								tcg_out8(s, 0x53);/*pushq %r11 */ 
 
 
 								/*rax-r8 = rax latency*/ 
@@ -1314,12 +1329,6 @@ static bool tcg_out_sti(TCGContext *s, TCGType type, TCGArg val,
 								/*gen calling hel function*/ 
 								tcg_out_call(s, hel); 
 
-								/*pop rax*/ 
-								tcg_out8(s, 0x48);/*add rsp+8*/ 
-								tcg_out8(s, 0x83);/*add rsp+8*/ 
-								tcg_out8(s, 0xc4);/*add rsp+8*/ 
-								tcg_out8(s, 0x08);/*add rsp+8*/ 
-
 								/*caller save registers restore*/ 
 								tcg_out8(s, 0x41);/*popq %r11*/ 
 								tcg_out8(s, 0x5b);/*popq %r11*/ 
@@ -1327,11 +1336,11 @@ static bool tcg_out_sti(TCGContext *s, TCGType type, TCGArg val,
 								tcg_out8(s, 0x5a);/*popq %r10*/ 
 								tcg_out8(s, 0x41);/*popq %r9*/ 
 								tcg_out8(s, 0x59);/*popq %r9*/ 
-								tcg_out8(s, 0x41);/*popq %r8*/ 
-								tcg_out8(s, 0x58);/*popq %r8*/ 
-								tcg_out8(s, 0x5f);/*popq %rdi*/ 
+								tcg_out8(s, 0x5f);/*popq %rdi*/
 								tcg_out8(s, 0x5e);/*popq %rsi*/ 
 								tcg_out8(s, 0x59);/*popq %rcx*/ 
+								tcg_out8(s, 0x41);/*popq %r8*/ 
+								tcg_out8(s, 0x58);/*popq %r8*/ 
 								tcg_out8(s, 0x5a);/*popq %rdx*/ 
 								tcg_out8(s, 0x58);/*popq %rax*/ 
 						}
